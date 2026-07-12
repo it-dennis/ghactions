@@ -1,9 +1,9 @@
-name: Deploy Staging
+name: Deploy Production
 
 on:
   push:
-    branches:
-      - main
+    tags:
+      - "v*"
 
 jobs:
   deploy:
@@ -18,7 +18,7 @@ jobs:
           webhook-type: incoming-webhook
           payload: |
             text: |
-              🚀 Staging gestartet
+              🚀 Production gestartet
 
               Benutzer:
               ${{ github.actor }}
@@ -26,20 +26,22 @@ jobs:
               Workflow:
               ${{ github.workflow }}
 
-      - name: Checkout Repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
       - name: SSH vorbereiten
         run: |
           mkdir -p ~/.ssh
           echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
-          ssh-keyscan -H ${{ secrets.EC2_IP_STAGING }} >> ~/.ssh/known_hosts
 
-      - name: Deploy nach Staging
+      - name: Deploy Production
         run: |
-          scp -i ~/.ssh/id_rsa Frontend/index.html ubuntu@${{ secrets.EC2_IP_STAGING }}:/tmp/index.html
-          ssh -i ~/.ssh/id_rsa ubuntu@${{ secrets.EC2_IP_STAGING }} "sudo cp /tmp/index.html /var/www/html/index.html"
+          for SERVER in ${{ secrets.EC2_IPS_PROD }}
+          do
+            ssh-keyscan -H $SERVER >> ~/.ssh/known_hosts
+            scp -i ~/.ssh/id_rsa Frontend/index.html ubuntu@$SERVER:/tmp/index.html
+            ssh -i ~/.ssh/id_rsa ubuntu@$SERVER "sudo cp /tmp/index.html /var/www/html/index.html"
+          done
 
       - name: Slack Erfolg
         if: success()
@@ -49,10 +51,7 @@ jobs:
           webhook-type: incoming-webhook
           payload: |
             text: |
-              ✅ Deployment erfolgreich
-
-              Workflow:
-              ${{ github.workflow }}
+              ✅ Production erfolgreich
 
       - name: Slack Fehler
         if: failure()
@@ -62,7 +61,4 @@ jobs:
           webhook-type: incoming-webhook
           payload: |
             text: |
-              ❌ Deployment fehlgeschlagen
-
-              Workflow:
-              ${{ github.workflow }}
+              ❌ Production fehlgeschlagen
