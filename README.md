@@ -25,4 +25,4 @@ Dieses Repository demonstriert eine einfache CI/CD-Pipeline mit GitHub Actions.
 
 ## Ende Banane!
 
-Dennis Rapp - Email(mailto:info@dennisrapp.com)
+Dennis Rapp - [E-Mail](mailto:info@dennisrapp.com)
